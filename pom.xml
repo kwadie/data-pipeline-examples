@@ -29,8 +29,8 @@
     <version>1.0-SNAPSHOT</version>
 
     <properties>
-        <maven.compiler.release>9</maven.compiler.release>
-        <beam.version>2.16.0</beam.version>
+        <java.version>1.8</java.version>
+        <beam.version>2.19.0</beam.version>
         <slf4j.version>1.6.1</slf4j.version>
     </properties>
 
@@ -127,7 +127,8 @@
             <artifactId>maven-compiler-plugin</artifactId>
             <version>3.8.0</version>
             <configuration>
-                <release>9</release>
+                <source>${java.version}</source>
+                <target>${java.version}</target>
             </configuration>
         </plugin>
     </plugins>
