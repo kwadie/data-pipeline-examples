@@ -18,17 +18,23 @@
 
 package com.google.cloud.pso.pipeline.model;
 
+import org.apache.avro.reflect.Nullable;
+import org.apache.beam.sdk.coders.AvroCoder;
+import org.apache.beam.sdk.coders.DefaultCoder;
+
 import javax.xml.bind.annotation.XmlAttribute;
 import java.util.Objects;
 
+@DefaultCoder(AvroCoder.class)
 public class Address {
 
     @XmlAttribute(name = "address")
+    @Nullable
     public String address = null;
 
     @XmlAttribute(name = "type")
+    @Nullable
     public String type = null;
-
 
     public Address(String address, String type) {
         this.address = address;

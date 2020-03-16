@@ -18,6 +18,10 @@
 
 package com.google.cloud.pso.pipeline.model;
 
+import org.apache.avro.reflect.Nullable;
+import org.apache.beam.sdk.coders.AvroCoder;
+import org.apache.beam.sdk.coders.DefaultCoder;
+
 import javax.xml.bind.annotation.XmlAttribute;
 import javax.xml.bind.annotation.XmlElement;
 import javax.xml.bind.annotation.XmlElementWrapper;
@@ -44,17 +48,21 @@ import java.util.Objects;
  */
 
 @XmlRootElement
+@DefaultCoder(AvroCoder.class)
 public class Person {
 
+    @Nullable
     public String name = null;
 
     @XmlAttribute(name = "id")
+    @Nullable
     public int id = -1;
 
     // XmLElementWrapper generates a wrapper element around XML representation
     @XmlElementWrapper(name = "addresses")
     // XmlElement sets the name of the entities
     @XmlElement(name = "address")
+    @Nullable
     public List<Address> addressList;
 
 

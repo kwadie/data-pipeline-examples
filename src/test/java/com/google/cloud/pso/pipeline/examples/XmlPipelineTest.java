@@ -43,12 +43,7 @@ public class XmlPipelineTest {
     @org.junit.Test
     public void testReadInput() {
 
-        XmlPipeline.Options options =
-                PipelineOptionsFactory.create().as(XmlPipeline.Options.class);
-
-        options.setSourcePath("src/test/resources/people.xml");
-
-        PCollection<Person> output = XmlPipeline.readInput(p, options);
+        // Arrange
 
         List<Address> lukeAddresses = new ArrayList<>();
         lukeAddresses.add(new Address("Tatooine", "home"));
@@ -60,6 +55,16 @@ public class XmlPipelineTest {
                         new Person("Leia Organa",2, null)
                 );
 
+
+        // Act
+        XmlPipeline.Options options =
+                PipelineOptionsFactory.create().as(XmlPipeline.Options.class);
+
+        options.setSourcePath("src/test/resources/people.xml");
+
+        PCollection<Person> output = XmlPipeline.readInput(p, options);
+
+        // Assert
         PAssert.that(output).containsInAnyOrder(expectedResults);
 
         p.run().waitUntilFinish();

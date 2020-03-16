@@ -25,6 +25,7 @@ import com.google.api.services.bigquery.model.TableSchema;
 import com.google.cloud.pso.pipeline.model.Person;
 import org.apache.beam.runners.dataflow.options.DataflowPipelineOptions;
 import org.apache.beam.sdk.Pipeline;
+import org.apache.beam.sdk.PipelineResult;
 import org.apache.beam.sdk.io.gcp.bigquery.BigQueryIO;
 import org.apache.beam.sdk.io.xml.XmlIO;
 import org.apache.beam.sdk.options.Description;
@@ -92,20 +93,18 @@ public class XmlPipeline {
         Options options =
                 PipelineOptionsFactory.fromArgs(args).withValidation().as(Options.class);
 
-        Pipeline p = Pipeline.create(options);
-
-        build(p, options);
-
-        p.run();
+        run(options);
     }
 
 
     // encapsulate the pipeline logic here for easier unit testing
-    public static void build(Pipeline p, Options options) {
+    public static PipelineResult run(Options options) {
 
-        PCollection<Person> output = readInput(p, options);
+        Pipeline p = Pipeline.create(options);
 
-        output.apply("write to BQ",
+        PCollection<Person> input = readInput(p, options);
+
+        input.apply("write to BQ",
                 BigQueryIO.<Person>write()
                         .to(options.getOutputTableSpec())
                         // only a SimpleFunction is needed for formatting
@@ -117,6 +116,8 @@ public class XmlPipeline {
                         .withCreateDisposition(BigQueryIO.Write.CreateDisposition.CREATE_NEVER)
                         .withExtendedErrorInfo()
         );
+
+        return p.run();
     }
 
     public static PCollection<Person> readInput(Pipeline p, Options options) {
