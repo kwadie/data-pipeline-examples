@@ -42,11 +42,13 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * The batch pipeline reads a nested Xml Schema, converts to BigQuery schema it and load it.
+ * The batch pipeline reads a nested Xml Schema, validate the records,
+ * converts to BigQuery schema it and load it. Failed records are also saved in BigQuery
+ * in a dead letter table
  * <p>
  * usage:
  * mvn compile exec:java \
- * -Dexec.mainClass=com.google.cloud.pso.pipeline.examples.XmlPipeline \
+ * -Dexec.mainClass=com.google.cloud.pso.pipeline.examples.XmlPipelineWithDeadLetter \
  * -Dexec.args=" \
  * --sourcePath=$xmlPath \
  * --outputTableSpec=$project:dataset.table \

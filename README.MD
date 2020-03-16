@@ -30,3 +30,22 @@ Reads a nested XML file ([sample](src/test/resources/people.xml)) and load it to
   --runner=$DirectRunnerOrDataflowRunner"
 ```
 * PS: The truncate the destination table at each run
+
+## XmlPipelineWithDeadLetter
+
+Same as XmlPipeline but demonstrates the usages of TupleTag (i.e. the mechanism of writing multiple outputs)
+The pipeline validates the records using a DoFn and writes failed records to BigQuery
+* Create the destination table on BigQuery via this [DDL](src/main/resources/person deadletter.sql)
+* Run the job via DirectRunner or DataflowRunner
+
+```
+  mvn compile exec:java \
+  -Dexec.mainClass=com.google.cloud.pso.pipeline.examples.XmlPipelineWithDeadLetter \
+  -Dexec.args=" \
+  --sourcePath=$xmlPath \
+  --outputTableSpec=$project:dataset.table \
+  --deadLetterTableSpec=$project:dataset.table \
+  --project=$projectToRunDataflow \
+  --tempLocation=$gs://bucket \
+  --runner=$DirectRunnerOrDataflowRunner"
+```
