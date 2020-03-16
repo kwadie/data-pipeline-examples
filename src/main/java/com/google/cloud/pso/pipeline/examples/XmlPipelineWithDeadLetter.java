@@ -19,7 +19,6 @@
 package com.google.cloud.pso.pipeline.examples;
 
 import com.google.api.services.bigquery.model.TableRow;
-import com.google.cloud.Tuple;
 import com.google.cloud.pso.pipeline.model.Person;
 import com.google.cloud.pso.pipeline.model.PersonValidationError;
 import org.apache.beam.runners.dataflow.options.DataflowPipelineOptions;
@@ -32,12 +31,10 @@ import org.apache.beam.sdk.options.Description;
 import org.apache.beam.sdk.options.PipelineOptionsFactory;
 import org.apache.beam.sdk.options.Validation;
 import org.apache.beam.sdk.transforms.DoFn;
+import org.apache.beam.sdk.transforms.PTransform;
 import org.apache.beam.sdk.transforms.ParDo;
 import org.apache.beam.sdk.transforms.SimpleFunction;
-import org.apache.beam.sdk.values.PCollection;
-import org.apache.beam.sdk.values.PCollectionTuple;
-import org.apache.beam.sdk.values.TupleTag;
-import org.apache.beam.sdk.values.TupleTagList;
+import org.apache.beam.sdk.values.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -111,14 +108,13 @@ public class XmlPipelineWithDeadLetter {
          */
 
         Pipeline p = Pipeline.create(options);
+        
+        // 1&2 "Extract and Transform"
+        PCollectionTuple results = p
+                .apply("Extract", new PipelineDataReader(options))
+                .apply("Transform", new PipelineDataTransformer(options));
 
-        PCollection<Person> input = readInput(p, options);
-
-        // validate records
-        PCollectionTuple results = input.apply("Validate Records",
-                ParDo.of(new ValidatePerson())
-                        .withOutputTags(MAIN_OUT, TupleTagList.of(DEADLETTER_OUT)));
-
+        //3&4 "Load"
         // write the main output to BQ
         WriteResult mainOutWriteResult = results.get(MAIN_OUT)
                 .apply("Write MainOutput to BQ",
@@ -143,14 +139,51 @@ public class XmlPipelineWithDeadLetter {
 
         return p.run();
     }
+    
+    public static class PipelineDataReader
+            extends PTransform<PBegin, PCollection<Person>> {
 
-    public static PCollection<Person> readInput(Pipeline p, Options options) {
-        return p.apply("Read XML",
-                XmlIO.<Person>read()
-                        .from(options.getSourcePath())
-                        .withRootElement("people")
-                        .withRecordElement("person")
-                        .withRecordClass(Person.class));
+        private final Options options;
+
+        public PipelineDataReader(Options options) {
+            this.options = options;
+        }
+
+        @Override
+        public PCollection<Person> expand(PBegin input) {
+
+            return input.apply("Read XML",
+                    XmlIO.<Person>read()
+                            .from(options.getSourcePath())
+                            .withRootElement("people")
+                            .withRecordElement("person")
+                            .withRecordClass(Person.class));
+        }
+    }
+
+    /**
+     * Encapsulate all pipeline transformations except for source and sink in
+     * one unit to be able to unit test it
+     */
+    public static class PipelineDataTransformer
+            extends PTransform<PCollection<Person>, PCollectionTuple> {
+
+        private final Options options;
+
+        public PipelineDataTransformer(Options options) {
+            this.options = options;
+        }
+
+        @Override
+        public PCollectionTuple expand(PCollection<Person> input) {
+
+            return input.apply("Validate Records",
+                    ParDo.of(new ValidatePerson())
+                            .withOutputTags(MAIN_OUT, TupleTagList.of(DEADLETTER_OUT)));
+
+            // add more transformations here and update the return type if needed
+            // use return PCollectionTuple.of(..) to add multiple outputs
+        }
     }
 
     public static class FormatPersonAsTableRow extends SimpleFunction<Person, TableRow> {

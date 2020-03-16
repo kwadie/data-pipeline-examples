@@ -31,14 +31,16 @@ import org.apache.beam.sdk.io.xml.XmlIO;
 import org.apache.beam.sdk.options.Description;
 import org.apache.beam.sdk.options.PipelineOptionsFactory;
 import org.apache.beam.sdk.options.Validation;
+import org.apache.beam.sdk.transforms.PTransform;
 import org.apache.beam.sdk.transforms.SimpleFunction;
+import org.apache.beam.sdk.values.PBegin;
 import org.apache.beam.sdk.values.PCollection;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
  * The batch pipeline reads a nested Xml Schema, converts to BigQuery schema it and load it.
- *
+ * <p>
  * usage:
  * mvn compile exec:java \
  * -Dexec.mainClass=com.google.cloud.pso.pipeline.examples.XmlPipeline \
@@ -102,31 +104,27 @@ public class XmlPipeline {
 
         Pipeline p = Pipeline.create(options);
 
-        PCollection<Person> input = readInput(p, options);
-
-        input.apply("write to BQ",
-                BigQueryIO.<Person>write()
-                        .to(options.getOutputTableSpec())
-                        // only a SimpleFunction is needed for formatting
-                        // DoFn with ParDo could be used in a previous step for complex processing
-                        .withFormatFunction(new FormatPersonAsTableRow())
-                        .withWriteDisposition(BigQueryIO.Write.WriteDisposition.WRITE_TRUNCATE)
-                        // when no schema is provided the CreateDisposition must be CREATE_NEVER
-                        //.withSchema(getTableSchema())
-                        .withCreateDisposition(BigQueryIO.Write.CreateDisposition.CREATE_NEVER)
-                        .withExtendedErrorInfo()
-        );
+        p
+                .apply("Extract from XML",
+                        XmlIO.<Person>read()
+                                .from(options.getSourcePath())
+                                .withRootElement("people")
+                                .withRecordElement("person")
+                                .withRecordClass(Person.class))
+                .apply("Load to BQ",
+                        BigQueryIO.<Person>write()
+                                .to(options.getOutputTableSpec())
+                                // only a SimpleFunction is needed for formatting
+                                // DoFn with ParDo could be used in a previous step for complex processing
+                                .withFormatFunction(new FormatPersonAsTableRow())
+                                .withWriteDisposition(BigQueryIO.Write.WriteDisposition.WRITE_TRUNCATE)
+                                // when no schema is provided the CreateDisposition must be CREATE_NEVER
+                                //.withSchema(getTableSchema())
+                                .withCreateDisposition(BigQueryIO.Write.CreateDisposition.CREATE_NEVER)
+                                .withExtendedErrorInfo()
+                );
 
         return p.run();
-    }
-
-    public static PCollection<Person> readInput(Pipeline p, Options options) {
-        return p.apply("read XML",
-                XmlIO.<Person>read()
-                        .from(options.getSourcePath())
-                        .withRootElement("people")
-                        .withRecordElement("person")
-                        .withRecordClass(Person.class));
     }
 
     public static class FormatPersonAsTableRow extends SimpleFunction<Person, TableRow> {
