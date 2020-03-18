@@ -30,10 +30,7 @@ import org.apache.beam.sdk.io.xml.XmlIO;
 import org.apache.beam.sdk.options.Description;
 import org.apache.beam.sdk.options.PipelineOptionsFactory;
 import org.apache.beam.sdk.options.Validation;
-import org.apache.beam.sdk.transforms.DoFn;
-import org.apache.beam.sdk.transforms.PTransform;
-import org.apache.beam.sdk.transforms.ParDo;
-import org.apache.beam.sdk.transforms.SimpleFunction;
+import org.apache.beam.sdk.transforms.*;
 import org.apache.beam.sdk.values.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -108,7 +105,7 @@ public class XmlPipelineWithDeadLetter {
          */
 
         Pipeline p = Pipeline.create(options);
-        
+
         // 1&2 "Extract and Transform"
         PCollectionTuple results = p
                 .apply("Extract", new PipelineDataReader(options))
@@ -139,7 +136,7 @@ public class XmlPipelineWithDeadLetter {
 
         return p.run();
     }
-    
+
     public static class PipelineDataReader
             extends PTransform<PBegin, PCollection<Person>> {
 
@@ -177,9 +174,18 @@ public class XmlPipelineWithDeadLetter {
         @Override
         public PCollectionTuple expand(PCollection<Person> input) {
 
-            return input.apply("Validate Records",
-                    ParDo.of(new ValidatePerson())
-                            .withOutputTags(MAIN_OUT, TupleTagList.of(DEADLETTER_OUT)));
+            return input
+                    .apply("To UpperCase",
+                            MapElements.via(new SimpleFunction<Person, Person>() {
+                        @Override
+                        public Person apply(Person input) {
+                            return new Person(input.name.toUpperCase(), input.id, input.addressList);
+                        }
+                    }))
+                    .apply("Validate Records",
+                            ParDo.of(new ValidatePerson())
+                                    .withOutputTags(MAIN_OUT, TupleTagList.of(DEADLETTER_OUT)))
+                    ;
 
             // add more transformations here and update the return type if needed
             // use return PCollectionTuple.of(..) to add multiple outputs

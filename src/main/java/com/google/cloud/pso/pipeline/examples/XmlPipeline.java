@@ -57,20 +57,6 @@ public class XmlPipeline {
 
     private static final Logger LOG = LoggerFactory.getLogger(XmlPipeline.class);
 
-    // destination BigQuery table schema
-    private static final TableSchema destinationSchema = new TableSchema().setFields(
-            ImmutableList.of(
-                    new TableFieldSchema().setName("id").setType("INT64"),
-                    new TableFieldSchema().setName("name").setType("STRING"),
-                    new TableFieldSchema().setName("addresses")
-                            .setType("RECORD")
-                            .setFields(ImmutableList.of(
-                                    new TableFieldSchema().setName("type").setType("STRING"),
-                                    new TableFieldSchema().setName("address").setType("STRING")
-                            ))
-            )
-    );
-
     public static TableSchema getTableSchema() {
         return destinationSchema;
     }
@@ -136,4 +122,18 @@ public class XmlPipeline {
                     .set("addresses", p.addressList);
         }
     }
+
+    // destination BigQuery table schema
+    private static final TableSchema destinationSchema = new TableSchema().setFields(
+            ImmutableList.of(
+                    new TableFieldSchema().setName("id").setType("INT64"),
+                    new TableFieldSchema().setName("name").setType("STRING"),
+                    new TableFieldSchema().setName("addresses")
+                            .setType("RECORD")
+                            .setFields(ImmutableList.of(
+                                    new TableFieldSchema().setName("type").setType("STRING"),
+                                    new TableFieldSchema().setName("address").setType("STRING")
+                            ))
+            )
+    );
 }

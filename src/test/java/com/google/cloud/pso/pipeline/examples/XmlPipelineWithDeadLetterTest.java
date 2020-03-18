@@ -64,10 +64,10 @@ public class XmlPipelineWithDeadLetterTest {
 
         List<Person> expectedResults =
                 ImmutableList.of(
-                        new Person("Luke Skywalker",1, lukeAddresses),
-                        new Person("Leia Organa",2, null)
+                        new Person("Luke Skywalker", 1, lukeAddresses),
+                        new Person("Leia Organa", 2, null)
                 );
-        
+
         XmlPipelineWithDeadLetter.Options options =
                 PipelineOptionsFactory.create().as(XmlPipelineWithDeadLetter.Options.class);
 
@@ -109,7 +109,7 @@ public class XmlPipelineWithDeadLetterTest {
                 new PersonValidationError(leia, "Person has no addresses. Added to error output"));
 
         p.getCoderRegistry().registerCoderForClass(Person.class, AvroCoder.of(Person.class));
-        p.getCoderRegistry().registerCoderForClass(PersonValidationError.class,  AvroCoder.of(PersonValidationError.class));
+        p.getCoderRegistry().registerCoderForClass(PersonValidationError.class, AvroCoder.of(PersonValidationError.class));
 
         // Act
         PCollectionTuple output = p.apply(Create.of(input))
@@ -138,23 +138,23 @@ public class XmlPipelineWithDeadLetterTest {
         lukeAddresses.add(new Address("Tatooine", "home"));
         lukeAddresses.add(new Address("Lars Farm", "work"));
 
-        Person luke = new Person("Luke Skywalker", 1, ImmutableList.of(
-                new Address("Tatooine", "home"),
-                new Address("Lars Farm", "work"))
-        );
+        Person luke = new Person("Luke Skywalker", 1, lukeAddresses);
 
         Person leia = new Person("Leia Organa", 2, null);
 
         List<Person> input = ImmutableList.of(luke, leia);
 
         // records without addresses are filtered out
-        List<Person> expectedMainOutput = ImmutableList.of(luke);
+        List<Person> expectedMainOutput = ImmutableList.of(
+                new Person("LUKE SKYWALKER", 1, lukeAddresses)
+        );
 
         List<PersonValidationError> expectedDeadLetterOutput = ImmutableList.of(
-                new PersonValidationError(leia, "Person has no addresses. Added to error output"));
+                new PersonValidationError(new Person("LEIA ORGANA", 2, null),
+                        "Person has no addresses. Added to error output"));
 
         p.getCoderRegistry().registerCoderForClass(Person.class, AvroCoder.of(Person.class));
-        p.getCoderRegistry().registerCoderForClass(PersonValidationError.class,  AvroCoder.of(PersonValidationError.class));
+        p.getCoderRegistry().registerCoderForClass(PersonValidationError.class, AvroCoder.of(PersonValidationError.class));
 
         // Act
         PCollectionTuple output = p.apply(Create.of(input))
